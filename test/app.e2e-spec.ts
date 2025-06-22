@@ -28,7 +28,7 @@ describe('AppController (e2e)', () => {
 
   describe('POST /account', () => {
     const correctForm = {
-      email: 'owo@uwu.com',
+      username: 'user',
       password: 'correct horse battery staple',
       confirmPassword: 'correct horse battery staple',
     };
@@ -39,8 +39,10 @@ describe('AppController (e2e)', () => {
         endpoint: 'POST /account',
         correctForm,
         wrongFields: [
-          { email: '' },
-          { email: 'owo.com' },
+          { username: '' },
+          { username: 'a' },
+          { username: Array(100).fill('A').join('') },
+          { username: '@@@@' },
           { password: '' },
           { password: 'horse' },
           { confirmPassword: '' },
