@@ -53,7 +53,8 @@ describe('AppController (e2e)', () => {
 
     it('201 with data', async () => {
       const res = await req(app, 'POST /account', { form: correctForm });
-      expectRes(res, 201);
+      expectRes(res, 201, 'Account successfully created.');
+      expect(res.body.data).toEqual(correctForm);
     });
   });
 });

@@ -10,6 +10,9 @@ export class AccountController {
   @Post()
   @UsePipes(new ZodValidationPipe(createAccountSchema))
   create(@Body() { data }: { data: CreateAccountDto }) {
-    // console.log(data);
+    return {
+      message: 'Account successfully created.',
+      data,
+    };
   }
 }
