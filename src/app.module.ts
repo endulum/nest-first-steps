@@ -1,9 +1,15 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
 import { AccountModule } from './account/account.module';
-import { NotFoundController } from './etc/not-found.controller';
+import { NotFoundExceptionFilter } from './shared/http-exception.filter';
 
 @Module({
   imports: [AccountModule],
-  controllers: [NotFoundController],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: NotFoundExceptionFilter,
+    },
+  ],
 })
 export class AppModule {}

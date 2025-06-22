@@ -9,7 +9,7 @@ import {
 export class AccountController {
   @Post()
   @UsePipes(new ZodValidationPipe(createAccountSchema))
-  create(@Body() createAccountDto: CreateAccountDto) {
-    return createAccountDto;
+  create(@Body() { data }: { data: CreateAccountDto }) {
+    // console.log(data);
   }
 }
