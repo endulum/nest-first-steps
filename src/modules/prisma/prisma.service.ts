@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { PrismaClient, Prisma } from '@prisma/client';
+import { hashPassword } from 'src/shared/helpers/password.helpers';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
@@ -14,5 +15,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       "DELETE FROM sqlite_sequence WHERE name = 'User'",
     ])
       await this.$queryRaw`${Prisma.raw(query)}`;
+  }
+
+  async createUser(data: Prisma.UserCreateInput) {
+    const user = await this.user.create({
+      data: {
+        ...data,
+        password: await hashPassword(data.password),
+      },
+    });
+    return { id: user.id, username: user.username };
   }
 }

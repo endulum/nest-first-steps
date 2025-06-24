@@ -61,7 +61,7 @@ describe(Routes.Login, () => {
 
   beforeAll(async () => {
     await prisma.clear();
-    await prisma.user.create({ data: correctForm });
+    await prisma.createUser({ ...correctForm });
   });
 
   it('400 if input errors', async () => {
@@ -100,7 +100,7 @@ describe(Routes.Landing, () => {
 
   beforeAll(async () => {
     await prisma.clear();
-    await prisma.user.create({ data: loginForm });
+    await prisma.createUser({ ...loginForm });
   });
 
   it('401 if no token', async () => {

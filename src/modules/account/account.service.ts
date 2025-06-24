@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { type User, type Prisma } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
+import { comparePasswords } from 'src/shared/helpers/password.helpers';
 
 @Injectable()
 export class AccountService {
@@ -14,13 +15,15 @@ export class AccountService {
     return this.prisma.user.findUnique({ where: { username } });
   }
 
-  async createUser(data: Prisma.UserCreateInput): Promise<User> {
-    return this.prisma.user.create({ data });
+  async createUser(
+    data: Prisma.UserCreateInput,
+  ): Promise<{ id: number; username: string }> {
+    return await this.prisma.createUser({ ...data });
   }
 
   async authUser(username: string, password: string): Promise<string> {
     const user = await this.findUser(username);
-    if (!user || user.password !== password)
+    if (!user || !(await comparePasswords(user.password, password)))
       throw new BadRequestException({
         message: 'Incorrect username or password.',
       });
