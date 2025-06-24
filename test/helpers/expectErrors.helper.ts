@@ -22,11 +22,16 @@ export async function expectErrors({
       ...(token && { token }),
       form,
     });
-    expectRes(
-      res,
-      400,
-      'There are some validation errors with your submission.',
-    );
+    try {
+      expectRes(
+        res,
+        400,
+        'There are some validation errors with your submission.',
+      );
+    } catch (err) {
+      console.log(res.body, form);
+      throw err;
+    }
   }
 
   // could use Promise.all(), but this causes ECONNRESET in testing

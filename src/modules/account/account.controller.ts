@@ -6,6 +6,7 @@ import {
 } from './dto/create-account.dto';
 import { AccountService } from './account.service';
 import { UsernameUniquePipe } from 'src/shared/pipes/username-unique.pipe';
+import { AuthAccountDto, authAccountSchema } from './dto/auth-account.dto';
 
 @Controller('account')
 export class AccountController {
@@ -13,7 +14,7 @@ export class AccountController {
 
   @Post('/signup')
   @UsePipes(new ZodValidationPipe(createAccountSchema), UsernameUniquePipe)
-  async create(@Body() { data }: { data: CreateAccountDto }) {
+  async signup(@Body() { data }: { data: CreateAccountDto }) {
     const user = await this.accountService.createUser({
       username: data.username,
       password: data.password,
@@ -21,6 +22,19 @@ export class AccountController {
     return {
       message: 'Account successfully created.',
       data: { id: user.id, username: user.username },
+    };
+  }
+
+  @Post('/login')
+  @UsePipes(new ZodValidationPipe(authAccountSchema))
+  async login(@Body() { data }: { data: AuthAccountDto }) {
+    const token = await this.accountService.authUser(
+      data.username,
+      data.password,
+    );
+    return {
+      message: `Successfully logged in.`,
+      token,
     };
   }
 }

@@ -1,5 +1,5 @@
 import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common';
-import { AccountService } from 'src/account/account.service';
+import { AccountService } from 'src/modules/account/account.service';
 
 @Injectable()
 export class UsernameUniquePipe implements PipeTransform {

@@ -1,5 +1,5 @@
 import { App } from 'supertest/types';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from 'src/modules/prisma/prisma.service';
 
 declare global {
   var app: App;

@@ -4,6 +4,7 @@ import {
   ArgumentsHost,
   NotFoundException,
   InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 
@@ -28,6 +29,18 @@ export class InternalServerErrorExceptionFilter implements ExceptionFilter {
 
     response.status(404).json({
       message: 'Sorry, something went wrong when handling your request.',
+    });
+  }
+}
+
+@Catch(UnauthorizedException)
+export class UnauthorizedExceptionFilter implements ExceptionFilter {
+  catch(exception: UnauthorizedException, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse<Response>();
+
+    response.status(401).json({
+      message: 'Please log in.',
     });
   }
 }
