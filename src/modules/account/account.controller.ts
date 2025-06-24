@@ -1,4 +1,12 @@
-import { Body, Controller, Post, UsePipes } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Get,
+  UseGuards,
+  UsePipes,
+  Request,
+} from '@nestjs/common';
 import { ZodValidationPipe } from 'src/shared/pipes/zod-validation.pipe';
 import {
   CreateAccountDto,
@@ -7,6 +15,7 @@ import {
 import { AccountService } from './account.service';
 import { UsernameUniquePipe } from 'src/shared/pipes/username-unique.pipe';
 import { AuthAccountDto, authAccountSchema } from './dto/auth-account.dto';
+import { AuthGuard } from './auth.guard';
 
 @Controller('account')
 export class AccountController {
@@ -36,5 +45,11 @@ export class AccountController {
       message: `Successfully logged in.`,
       token,
     };
+  }
+
+  @UseGuards(AuthGuard)
+  @Get()
+  land(@Request() req: { user: { id: number; username: string } }) {
+    return req.user;
   }
 }

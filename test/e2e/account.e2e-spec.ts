@@ -91,3 +91,28 @@ describe(Routes.Login, () => {
     expect(res.body.token).toBeDefined();
   });
 });
+
+describe(Routes.Landing, () => {
+  const loginForm = {
+    username: 'user',
+    password: 'password',
+  };
+
+  beforeAll(async () => {
+    await prisma.clear();
+    await prisma.user.create({ data: loginForm });
+  });
+
+  it('401 if no token', async () => {
+    const res = await req(app, Routes.Landing);
+    expectRes(res, 401, 'Please log in.');
+  });
+
+  it('200 with data', async () => {
+    let res = await req(app, Routes.Login, { form: loginForm });
+    const token = res.body.token;
+    res = await req(app, Routes.Landing, { token });
+    expectRes(res, 200);
+    console.log(res.body);
+  });
+});

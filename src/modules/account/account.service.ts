@@ -1,10 +1,14 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { type User, type Prisma } from '@prisma/client';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AccountService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
 
   async findUser(username: string): Promise<User | null> {
     return this.prisma.user.findUnique({ where: { username } });
@@ -20,6 +24,9 @@ export class AccountService {
       throw new BadRequestException({
         message: 'Incorrect username or password.',
       });
-    return 'token';
+
+    const payload = { id: user.id, username: user.username };
+    const token = await this.jwtService.signAsync(payload);
+    return token;
   }
 }
