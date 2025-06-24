@@ -43,13 +43,13 @@ export class AccountController {
     );
     return {
       message: `Successfully logged in.`,
-      token,
+      data: { token },
     };
   }
 
   @UseGuards(AuthGuard)
   @Get()
   land(@Request() req: { user: { id: number; username: string } }) {
-    return req.user;
+    return { data: { ...req.user } };
   }
 }

@@ -88,7 +88,7 @@ describe(Routes.Login, () => {
   it('201 with token', async () => {
     const res = await req(app, Routes.Login, { form: correctForm });
     expectRes(res, 201, 'Successfully logged in.');
-    expect(res.body.token).toBeDefined();
+    expect(res.body.data.token).toBeDefined();
   });
 });
 
@@ -110,9 +110,8 @@ describe(Routes.Landing, () => {
 
   it('200 with data', async () => {
     let res = await req(app, Routes.Login, { form: loginForm });
-    const token = res.body.token;
+    const token = res.body.data.token;
     res = await req(app, Routes.Landing, { token });
     expectRes(res, 200);
-    console.log(res.body);
   });
 });
