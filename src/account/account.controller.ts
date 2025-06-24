@@ -14,12 +14,13 @@ export class AccountController {
   @Post('/signup')
   @UsePipes(new ZodValidationPipe(createAccountSchema), UsernameUniquePipe)
   async create(@Body() { data }: { data: CreateAccountDto }) {
+    const user = await this.accountService.createUser({
+      username: data.username,
+      password: data.password,
+    });
     return {
       message: 'Account successfully created.',
-      data: await this.accountService.createUser({
-        username: data.username,
-        password: data.password,
-      }),
+      data: { id: user.id, username: user.username },
     };
   }
 }

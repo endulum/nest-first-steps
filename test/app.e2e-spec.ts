@@ -4,14 +4,18 @@ import { req } from './helpers/req.helper';
 import { expectRes } from './helpers/expectRes.helper';
 import { expectErrors } from './helpers/expectErrors.helper';
 import { App } from 'supertest/types';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 describe('AppController (e2e)', () => {
   let nestApp: NestApp;
   let app: App;
+  let prisma: PrismaService;
 
   beforeAll(async () => {
     nestApp = await createTestApp();
     app = nestApp.getHttpServer();
+    prisma = nestApp.get<PrismaService>(PrismaService);
+    await prisma.clear();
   });
 
   afterAll(async () => {
@@ -26,17 +30,17 @@ describe('AppController (e2e)', () => {
     });
   });
 
-  describe('POST /account', () => {
+  describe('POST /account/signup', () => {
     const correctForm = {
       username: 'user',
       password: 'correct horse battery staple',
       confirmPassword: 'correct horse battery staple',
     };
 
-    it('400 with errors', async () => {
+    it('400 if input errors', async () => {
       await expectErrors({
         app,
-        endpoint: 'POST /account',
+        endpoint: 'POST /account/signup',
         correctForm,
         wrongFields: [
           { username: '' },
@@ -51,10 +55,23 @@ describe('AppController (e2e)', () => {
       });
     });
 
+    it('400 if username is not unique', async () => {
+      const existingUser = await prisma.user.create({
+        data: { username: 'admin', password: 'correct horse battery staple' },
+      });
+      const res = await req(app, 'POST /account/signup', {
+        form: { ...correctForm, username: existingUser.username },
+      });
+      expectRes(res, 400, 'Usernames must be unique. Please choose another.');
+    });
+
     it('201 with data', async () => {
-      const res = await req(app, 'POST /account', { form: correctForm });
+      const res = await req(app, 'POST /account/signup', { form: correctForm });
       expectRes(res, 201, 'Account successfully created.');
-      expect(res.body.data).toEqual(correctForm);
+      expect(res.body.data).toEqual({
+        id: 2,
+        username: correctForm.username,
+      });
     });
   });
 });
