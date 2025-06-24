@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { AccountModule } from './account/account.module';
-import { NotFoundExceptionFilter } from './shared/http-exception.filter';
+import {
+  InternalServerErrorExceptionFilter,
+  NotFoundExceptionFilter,
+} from './shared/http-exception.filters';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -11,7 +14,10 @@ import { PrismaModule } from './prisma/prisma.module';
       provide: APP_FILTER,
       useClass: NotFoundExceptionFilter,
     },
-    // todo: add filter for server errors
+    {
+      provide: APP_FILTER,
+      useClass: InternalServerErrorExceptionFilter,
+    },
   ],
 })
 export class AppModule {}

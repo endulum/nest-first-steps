@@ -1,7 +1,7 @@
 import { req } from '../helpers/req.helper';
 import { expectRes } from '../helpers/expectRes.helper';
 
-describe('catchall (e2e)', () => {
+describe('catchall', () => {
   it('404', async () => {
     const url = '/owo';
     const res = await req(app, `GET ${url}`);
