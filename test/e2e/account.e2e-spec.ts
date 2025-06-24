@@ -2,7 +2,13 @@ import { req } from '../helpers/req.helper';
 import { expectRes } from '../helpers/expectRes.helper';
 import { expectErrors } from '../helpers/expectErrors.helper';
 
-describe('POST /account/signup', () => {
+enum Routes {
+  Signup = 'POST /account/signup',
+  Login = 'POST /account/login',
+  Landing = 'GET /account',
+}
+
+describe(Routes.Signup, () => {
   const correctForm = {
     username: 'user',
     password: 'correct horse battery staple',
@@ -12,7 +18,7 @@ describe('POST /account/signup', () => {
   it('400 if input errors', async () => {
     await expectErrors({
       app,
-      endpoint: 'POST /account/signup',
+      endpoint: Routes.Signup,
       correctForm,
       wrongFields: [
         { username: '' },
@@ -31,14 +37,14 @@ describe('POST /account/signup', () => {
     const existingUser = await prisma.user.create({
       data: { username: 'admin', password: 'correct horse battery staple' },
     });
-    const res = await req(app, 'POST /account/signup', {
+    const res = await req(app, Routes.Signup, {
       form: { ...correctForm, username: existingUser.username },
     });
     expectRes(res, 400, 'Usernames must be unique. Please choose another.');
   });
 
   it('201 with data', async () => {
-    const res = await req(app, 'POST /account/signup', { form: correctForm });
+    const res = await req(app, Routes.Signup, { form: correctForm });
     expectRes(res, 201, 'Account successfully created.');
     expect(res.body.data).toEqual({
       id: 2,
@@ -47,7 +53,7 @@ describe('POST /account/signup', () => {
   });
 });
 
-describe('POST /account/login', () => {
+describe(Routes.Login, () => {
   const correctForm = {
     username: 'user',
     password: 'correct horse battery staple',
@@ -61,7 +67,7 @@ describe('POST /account/login', () => {
   it('400 if input errors', async () => {
     await expectErrors({
       app,
-      endpoint: 'POST /account/login',
+      endpoint: Routes.Login,
       correctForm,
       wrongFields: [{ username: '' }, { password: '' }],
     });
@@ -69,18 +75,18 @@ describe('POST /account/login', () => {
 
   it('400 if incorrect username or password', async () => {
     const message = 'Incorrect username or password.';
-    const resIncorrectUsername = await req(app, 'POST /account/login', {
+    const resIncorrectUsername = await req(app, Routes.Login, {
       form: { ...correctForm, username: 'nonexistent-user' },
     });
     expectRes(resIncorrectUsername, 400, message);
-    const resIncorrectPassword = await req(app, 'POST /account/login', {
+    const resIncorrectPassword = await req(app, Routes.Login, {
       form: { ...correctForm, password: 'incorrect horse battery staple' },
     });
     expectRes(resIncorrectPassword, 400, message);
   });
 
   it('201 with token', async () => {
-    const res = await req(app, 'POST /account/login', { form: correctForm });
+    const res = await req(app, Routes.Login, { form: correctForm });
     expectRes(res, 201, 'Successfully logged in.');
     expect(res.body.token).toBeDefined();
   });
