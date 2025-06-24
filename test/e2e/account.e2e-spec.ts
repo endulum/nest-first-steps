@@ -1,27 +1,8 @@
-import { createTestApp } from '../helpers/app';
-import { type NestApp } from '../helpers/types';
 import { req } from '../helpers/req.helper';
 import { expectRes } from '../helpers/expectRes.helper';
 import { expectErrors } from '../helpers/expectErrors.helper';
-import { App } from 'supertest/types';
-import { PrismaService } from 'src/prisma/prisma.service';
 
 describe('POST /account/signup (e2e)', () => {
-  let nestApp: NestApp;
-  let app: App;
-  let prisma: PrismaService;
-
-  beforeAll(async () => {
-    nestApp = await createTestApp();
-    app = nestApp.getHttpServer();
-    prisma = nestApp.get<PrismaService>(PrismaService);
-    await prisma.clear();
-  });
-
-  afterAll(async () => {
-    await nestApp.close();
-  });
-
   const correctForm = {
     username: 'user',
     password: 'correct horse battery staple',
@@ -64,4 +45,4 @@ describe('POST /account/signup (e2e)', () => {
       username: correctForm.username,
     });
   });
-}); 
+});
