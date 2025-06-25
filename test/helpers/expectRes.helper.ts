@@ -18,7 +18,7 @@ export function expectRes(
       ...(expectedMessage && { message: expectedMessage }),
     });
   } catch (error) {
-    if (response.status === 400 && expectedCode !== 400) {
+    if (response.status === 400) {
       console.log(response.body);
     }
     throw error;

@@ -5,13 +5,13 @@ import { expectErrors } from '../helpers/expectErrors.helper';
 enum Routes {
   Signup = 'POST /account/signup',
   Login = 'POST /account/login',
-  CheckAccount = 'GET /account',
+  GetAccount = 'GET /account',
   EditAccount = 'POST /account',
 }
 
 describe(Routes.Signup, () => {
   const correctForm = {
-    username: 'user',
+    username: 'bob',
     password: 'correct horse battery staple',
     confirmPassword: 'correct horse battery staple',
   };
@@ -36,7 +36,7 @@ describe(Routes.Signup, () => {
 
   it('400 if username is not unique', async () => {
     const existingUser = await prisma.user.create({
-      data: { username: 'admin', password: 'correct horse battery staple' },
+      data: { username: 'alice', password: 'correct horse battery staple' },
     });
     const res = await req(app, Routes.Signup, {
       form: { ...correctForm, username: existingUser.username },
@@ -56,7 +56,7 @@ describe(Routes.Signup, () => {
 
 describe(Routes.Login, () => {
   const correctForm = {
-    username: 'user',
+    username: 'bob',
     password: 'correct horse battery staple',
   };
 
@@ -93,7 +93,7 @@ describe(Routes.Login, () => {
   });
 });
 
-describe(Routes.CheckAccount, () => {
+describe(Routes.GetAccount, () => {
   const loginForm = {
     username: 'user',
     password: 'password',
@@ -105,14 +105,14 @@ describe(Routes.CheckAccount, () => {
   });
 
   it('401 if no token', async () => {
-    const res = await req(app, Routes.CheckAccount);
+    const res = await req(app, Routes.GetAccount);
     expectRes(res, 401, 'Please log in.');
   });
 
   it('200 with data', async () => {
     let res = await req(app, Routes.Login, { form: loginForm });
     const token = res.body.data.token;
-    res = await req(app, Routes.CheckAccount, { token });
+    res = await req(app, Routes.GetAccount, { token });
     expectRes(res, 200);
   });
 });
@@ -165,6 +165,17 @@ describe(Routes.EditAccount, () => {
     });
     expectRes(res, 400, 'Usernames must be unique. Please choose another.');
     await prisma.user.delete({ where: { id: otherUser.id } });
+  });
+
+  it('400 if incorrect password', async () => {
+    const res = await req(app, Routes.EditAccount, {
+      token,
+      form: {
+        ...correctForm,
+        currentPassword: 'incorrect horse battery staple',
+      },
+    });
+    expectRes(res, 400, 'Incorrect password.');
   });
 
   it('201 with data', async () => {
