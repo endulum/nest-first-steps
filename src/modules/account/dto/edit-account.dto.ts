@@ -18,15 +18,15 @@ export const editAccountSchema = z
     confirmPassword: z.string().optional(),
     currentPassword: z.string().optional(),
   })
-  .refine((data) => data.password && data.confirmPassword, {
+  .refine((data) => !data.password || data.confirmPassword, {
     message: 'Please confirm your new password.',
     path: ['confirmPassword'],
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .refine((data) => !data.password || data.password === data.confirmPassword, {
     message: 'Passwords do not match.',
     path: ['confirmPassword'],
   })
-  .refine((data) => data.password && data.currentPassword, {
+  .refine((data) => !data.password || data.currentPassword, {
     message:
       'Please input your current password in order to use your new password.',
     path: ['currentPassword'],

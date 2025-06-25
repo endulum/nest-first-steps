@@ -27,7 +27,7 @@ export class InternalServerErrorExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
-    response.status(404).json({
+    response.status(500).json({
       message: 'Sorry, something went wrong when handling your request.',
     });
   }

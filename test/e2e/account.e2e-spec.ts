@@ -188,4 +188,16 @@ describe(Routes.EditAccount, () => {
     });
     expectRes(res, 201, 'Successfully logged in.');
   });
+
+  it('201 even without password', async () => {
+    const res = await req(app, Routes.EditAccount, {
+      token,
+      form: { username: 'eve' },
+    });
+    expectRes(res, 201, 'Successfully changed account details.');
+    expect(res.body.data).toEqual({
+      username: 'eve',
+      updatedPassword: false,
+    });
+  });
 });

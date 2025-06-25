@@ -7,13 +7,13 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { jwtConstants } from './constants';
 import { Request } from 'express';
-import { AccountService } from './account.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private jwtService: JwtService,
-    private accountService: AccountService,
+    private prismaService: PrismaService,
   ) {}
 
   private extractTokenFromHeader(request: Request): string | undefined {
@@ -31,7 +31,10 @@ export class AuthGuard implements CanActivate {
         await this.jwtService.verifyAsync(token, {
           secret: jwtConstants.secret,
         });
-      const user = await this.accountService.findUser(payload.username);
+      const user = await this.prismaService.user.findUnique({
+        where: { id: payload.id },
+      });
+      if (!user) throw new Error('No user for this payload found.');
       request['user'] = user;
     } catch {
       throw new UnauthorizedException();
