@@ -6,7 +6,7 @@ import {
   comparePasswords,
   hashPassword,
 } from 'src/shared/helpers/password.helpers';
-import { EditAccountDto } from './dto/edit-account.dto';
+import { EditAccountDto } from './dto/update-account.dto';
 
 @Injectable()
 export class AccountService {
