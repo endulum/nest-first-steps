@@ -174,6 +174,10 @@ describe(Routes.EditAccount, () => {
     });
     expectRes(res, 201, 'Successfully changed account details.');
     expect(res.body.data.username).toEqual(correctForm.username);
+    expect(res.body.data).toEqual({
+      username: correctForm.username,
+      updatedPassword: true,
+    });
 
     // can log in with new password afterward
     res = await req(app, Routes.Login, {

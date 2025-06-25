@@ -37,21 +37,31 @@ export class AccountService {
     return token;
   }
 
-  async editUser(user: User, data: EditAccountDto): Promise<User> {
-    if (
-      data.password &&
-      !(await comparePasswords(user.password, data.currentPassword ?? ''))
-    )
-      throw new BadRequestException({
-        message: 'Incorrect password.',
-      });
+  async editUser(
+    user: User,
+    data: EditAccountDto,
+  ): Promise<{ updatedUser: User; updatedPassword: boolean }> {
+    let updatedPassword = false;
+    if (data.password) {
+      updatedPassword = true;
+      const match = await comparePasswords(
+        user.password,
+        data.currentPassword ?? '',
+      );
+      if (!match)
+        throw new BadRequestException({
+          message: 'Incorrect password.',
+        });
+    }
 
-    return await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
         username: data.username,
         ...(data.password && { password: await hashPassword(data.password) }),
       },
     });
+
+    return { updatedUser, updatedPassword };
   }
 }

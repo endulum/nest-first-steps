@@ -62,11 +62,15 @@ export class AccountController {
     @Request() { user }: { user: User },
     @Body() { data }: { data: EditAccountDto },
   ) {
-    const editedUser = await this.accountService.editUser(user, data);
+    const { updatedUser, updatedPassword } = await this.accountService.editUser(
+      user,
+      data,
+    );
     return {
       message: 'Successfully changed account details.',
       data: {
-        username: editedUser.username,
+        username: updatedUser.username,
+        updatedPassword,
       },
     };
   }

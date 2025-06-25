@@ -12,5 +12,4 @@ model User {
   username String @unique
   password String
   joined DateTime @default(now())
-  bio String?
 }
