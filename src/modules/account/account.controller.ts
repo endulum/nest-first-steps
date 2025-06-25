@@ -16,6 +16,8 @@ import { AccountService } from './account.service';
 import { UsernameUniquePipe } from 'src/shared/pipes/username-unique.pipe';
 import { AuthAccountDto, authAccountSchema } from './dto/auth-account.dto';
 import { AuthGuard } from './auth.guard';
+import { EditAccountDto, editAccountSchema } from './dto/edit-account.dto';
+import { User } from '@prisma/client';
 
 @Controller('account')
 export class AccountController {
@@ -51,5 +53,21 @@ export class AccountController {
   @Get()
   land(@Request() req: { user: { id: number; username: string } }) {
     return { data: { ...req.user } };
+  }
+
+  @UseGuards(AuthGuard)
+  @Post()
+  @UsePipes(new ZodValidationPipe(editAccountSchema), UsernameUniquePipe)
+  async edit(
+    @Request() { user }: { user: User },
+    @Body() { data }: { data: EditAccountDto },
+  ) {
+    const editedUser = await this.accountService.editUser(user, data);
+    return {
+      message: 'Successfully changed account details.',
+      data: {
+        username: editedUser.username,
+      },
+    };
   }
 }

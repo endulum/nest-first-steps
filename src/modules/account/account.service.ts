@@ -2,7 +2,11 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { type User, type Prisma } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
-import { comparePasswords } from 'src/shared/helpers/password.helpers';
+import {
+  comparePasswords,
+  hashPassword,
+} from 'src/shared/helpers/password.helpers';
+import { EditAccountDto } from './dto/edit-account.dto';
 
 @Injectable()
 export class AccountService {
@@ -31,5 +35,23 @@ export class AccountService {
     const payload = { id: user.id, username: user.username };
     const token = await this.jwtService.signAsync(payload);
     return token;
+  }
+
+  async editUser(user: User, data: EditAccountDto): Promise<User> {
+    if (
+      data.password &&
+      !(await comparePasswords(user.password, data.currentPassword ?? ''))
+    )
+      throw new BadRequestException({
+        message: 'Incorrect password.',
+      });
+
+    return await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        username: data.username,
+        ...(data.password && { password: await hashPassword(data.password) }),
+      },
+    });
   }
 }

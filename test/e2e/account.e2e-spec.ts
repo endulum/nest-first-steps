@@ -5,7 +5,8 @@ import { expectErrors } from '../helpers/expectErrors.helper';
 enum Routes {
   Signup = 'POST /account/signup',
   Login = 'POST /account/login',
-  Landing = 'GET /account',
+  CheckAccount = 'GET /account',
+  EditAccount = 'POST /account',
 }
 
 describe(Routes.Signup, () => {
@@ -92,7 +93,7 @@ describe(Routes.Login, () => {
   });
 });
 
-describe(Routes.Landing, () => {
+describe(Routes.CheckAccount, () => {
   const loginForm = {
     username: 'user',
     password: 'password',
@@ -104,14 +105,83 @@ describe(Routes.Landing, () => {
   });
 
   it('401 if no token', async () => {
-    const res = await req(app, Routes.Landing);
+    const res = await req(app, Routes.CheckAccount);
     expectRes(res, 401, 'Please log in.');
   });
 
   it('200 with data', async () => {
     let res = await req(app, Routes.Login, { form: loginForm });
     const token = res.body.data.token;
-    res = await req(app, Routes.Landing, { token });
+    res = await req(app, Routes.CheckAccount, { token });
     expectRes(res, 200);
+  });
+});
+
+describe(Routes.EditAccount, () => {
+  const correctForm = {
+    username: 'alice',
+    password: 'staple battery horse correct',
+    confirmPassword: 'staple battery horse correct',
+    currentPassword: 'correct horse battery staple',
+  };
+  let token: string;
+
+  beforeAll(async () => {
+    await prisma.clear();
+    const bob = await prisma.createUser({
+      username: 'bob',
+      password: correctForm.currentPassword,
+    });
+    token = await jwt.signAsync({ id: bob.id, username: bob.username });
+  });
+
+  it('400 if input errors', async () => {
+    await expectErrors({
+      app,
+      endpoint: Routes.EditAccount,
+      token,
+      correctForm,
+      wrongFields: [
+        { username: '' },
+        { confirmPassword: '' },
+        { currentPassword: '' },
+        { username: 'a' },
+        { username: '&&&&' },
+        { password: '' },
+        { password: '.' },
+      ],
+    });
+  });
+
+  it('400 if username is not unique', async () => {
+    const otherUser = await prisma.createUser({
+      username: 'eve',
+      password: 'password',
+    });
+    const incorrectForm = { ...correctForm, username: otherUser.username };
+    const res = await req(app, Routes.EditAccount, {
+      token,
+      form: { ...incorrectForm },
+    });
+    expectRes(res, 400, 'Usernames must be unique. Please choose another.');
+    await prisma.user.delete({ where: { id: otherUser.id } });
+  });
+
+  it('201 with data', async () => {
+    let res = await req(app, Routes.EditAccount, {
+      token,
+      form: correctForm,
+    });
+    expectRes(res, 201, 'Successfully changed account details.');
+    expect(res.body.data.username).toEqual(correctForm.username);
+
+    // can log in with new password afterward
+    res = await req(app, Routes.Login, {
+      form: {
+        username: correctForm.username,
+        password: correctForm.password,
+      },
+    });
+    expectRes(res, 201, 'Successfully logged in.');
   });
 });
