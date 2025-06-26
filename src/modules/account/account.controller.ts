@@ -15,7 +15,7 @@ import {
 import { AccountService } from './account.service';
 import { UsernameUniquePipe } from 'src/shared/pipes/username-unique.pipe';
 import { AuthAccountDto, authAccountSchema } from './dto/auth-account.dto';
-import { AuthGuard } from './auth.guard';
+import { AuthGuard } from 'src/shared/guards/auth.guard';
 import { EditAccountDto, editAccountSchema } from './dto/update-account.dto';
 import { User } from '@prisma/client';
 
