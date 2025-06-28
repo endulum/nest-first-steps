@@ -6,8 +6,10 @@ export class UsernameUniquePipe implements PipeTransform {
   constructor(private accountService: AccountService) {}
 
   async transform(value: { data: { username: string } }) {
-    const user = await this.accountService.findUser(value.data.username);
-    if (user)
+    const existingUser = await this.accountService.findByUsername(
+      value.data.username,
+    );
+    if (existingUser)
       throw new BadRequestException({
         message: 'Usernames must be unique. Please choose another.',
       });

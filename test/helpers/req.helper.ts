@@ -20,9 +20,9 @@ export async function req(
         .set({ Authorization })
         .type('form')
         .send(form);
-    case 'PUT':
+    case 'PATCH':
       return request(app)
-        .put(url)
+        .patch(url)
         .set({ Authorization })
         .type('form')
         .send(form);

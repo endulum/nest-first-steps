@@ -7,7 +7,7 @@ This the server application for [Project Name], exposing an API for managing [Pr
 Response payloads are exclusively in JSON and the top-level JSON object follows this format:
 
 - `message?`: a string; a notable message about the success or failure of a response.
-- `data?`: where any data goes, if the request prompted some data.
+- `data?`: where any data goes.
 - `fieldErrors?`: an object; where field validation errors go, if the request was a form submission.
 - `links?`: an object; where URIs for links go, especially for pagination.
 
@@ -35,10 +35,68 @@ The value of `fieldErrors` is a key-value object wherein the keys are input path
 
 Client accounts are represented by `User` objects.
 
-- `POST /account/signup`: Create a `User`
-  - Body: [`create-account.dto`](../src/modules/account/dto/create-account.dto.ts)
-- `POST /account/login`: Authenticate self as a `User` and obtain a token
-  - Body: [`auth-account.dto`](../src/modules/account/dto/auth-account.dto.ts)
-- 🔑 `GET /account`: Get details of own `User`
-- 🔑 `POST /account`: Update details of own `User`
-  - Body: [`update-account.dto`](../src/modules/account/dto/update-account.dto.ts)
+#### `POST /account/signup`
+
+Create a `User`.
+
+Body: [`create-account.dto`](../src/modules/account/dto/create-account.dto.ts)
+
+Success payload:
+
+```json
+{
+  "message": "Account successfully created.",
+  "data": {
+    "newUser": {
+      "id": 1,
+      "username": "bob"
+    }
+  }
+}
+```
+
+#### `POST /account/login`
+
+Authenticate self as a `User` and obtain a token.
+
+Body: [`login.dto.ts`](./src/modules/account/dto/login.dto.ts)
+
+Success payload: [`login-success.schema.ts`](./src/modules/account/payloads/login-success.schema.ts)
+
+#### 🔑 `GET /account`
+
+Get details of own `User`.
+
+Payload:
+
+```json
+{
+  "data": {
+    "user": {
+      "id": 1,
+      "username": "bob"
+    }
+  }
+}
+```
+
+#### 🔑 `POST /account`
+
+Update details of own `User`.
+
+Body: [`update-account.dto`](../src/modules/account/dto/update-account.dto.ts)
+
+Success payload:
+
+```json
+{
+  "message": "Successfully changed account details.",
+  "data": {
+    "updatedUser": {
+      "id": 1,
+      "username": "alice"
+    },
+    "updatedPassword": true
+  }
+}
+```

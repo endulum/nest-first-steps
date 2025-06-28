@@ -1,46 +1,61 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/modules/prisma/prisma.service';
-import { type User, type Prisma } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
-import {
-  comparePasswords,
-  hashPassword,
-} from 'src/shared/helpers/password.helpers';
-import { EditAccountDto } from './dto/update-account.dto';
+import { type User } from '@prisma/client';
+import { comparePasswords } from 'src/shared/helpers/password.helpers';
+import { CreateAccountDto } from './dto/signup.dto';
+import { AuthAccountDto } from './dto/login.dto';
+import { UpdateAccountDto } from './dto/update.dto';
 
 @Injectable()
 export class AccountService {
   constructor(
     private prisma: PrismaService,
-    private jwtService: JwtService,
+    private jwt: JwtService,
   ) {}
 
-  async findUser(username: string): Promise<User | null> {
+  async findById(id: number): Promise<User | null> {
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+
+  async findByUsername(username: string): Promise<User | null> {
     return this.prisma.user.findUnique({ where: { username } });
   }
 
-  async createUser(
-    data: Prisma.UserCreateInput,
-  ): Promise<{ id: number; username: string }> {
-    return await this.prisma.createUser({ ...data });
+  async createFromData(data: CreateAccountDto) {
+    const newUser = await this.prisma.user.create({
+      data: {
+        username: data.username,
+        password: data.password,
+      },
+    });
+    return {
+      newUser: { id: newUser.id, username: newUser.username },
+    };
   }
 
-  async authUser(username: string, password: string): Promise<string> {
-    const user = await this.findUser(username);
-    if (!user || !(await comparePasswords(user.password, password)))
-      throw new BadRequestException({
-        message: 'Incorrect username or password.',
-      });
-
-    const payload = { id: user.id, username: user.username };
-    const token = await this.jwtService.signAsync(payload);
-    return token;
+  async authFromData(data: AuthAccountDto) {
+    const existingUser = await this.findByUsername(data.username);
+    if (existingUser) {
+      const match = await comparePasswords(
+        existingUser.password,
+        data.password,
+      );
+      if (match) {
+        const payload = {
+          id: existingUser.id,
+          username: existingUser.username,
+        };
+        const token = await this.jwt.signAsync(payload);
+        return { token };
+      }
+    }
+    throw new BadRequestException({
+      message: 'Incorrect username or password.',
+    });
   }
 
-  async editUser(
-    user: User,
-    data: EditAccountDto,
-  ): Promise<{ updatedUser: User; updatedPassword: boolean }> {
+  async updateUserFromData(user: User, data: UpdateAccountDto) {
     let updatedPassword = false;
     if (data.password) {
       updatedPassword = true;
@@ -48,20 +63,27 @@ export class AccountService {
         user.password,
         data.currentPassword ?? '',
       );
-      if (!match)
+      if (!match) {
         throw new BadRequestException({
           message: 'Incorrect password.',
         });
+      }
     }
 
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
         username: data.username,
-        ...(data.password && { password: await hashPassword(data.password) }),
+        ...(data.password && { password: data.password }),
       },
     });
 
-    return { updatedUser, updatedPassword };
+    return {
+      updatedUser: {
+        id: updatedUser.id,
+        username: updatedUser.username,
+      },
+      updatedPassword,
+    };
   }
 }

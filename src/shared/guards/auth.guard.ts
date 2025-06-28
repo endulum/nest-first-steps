@@ -5,10 +5,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { jwtConstants } from './constants';
 import { Request } from 'express';
-import { PrismaService } from '../prisma/prisma.service';
-import { User } from '@prisma/client';
+import { AccountService } from 'src/modules/account/account.service';
 
 type Payload = { id: number; username: string };
 
@@ -16,7 +14,7 @@ type Payload = { id: number; username: string };
 export class AuthGuard implements CanActivate {
   constructor(
     private jwtService: JwtService,
-    private prismaService: PrismaService,
+    private accountService: AccountService,
   ) {}
 
   private extractTokenFromHeader(request: Request): string | undefined {
@@ -29,7 +27,7 @@ export class AuthGuard implements CanActivate {
   ): Promise<Payload | null> {
     try {
       const payload: Payload = await this.jwtService.verifyAsync(token, {
-        secret: jwtConstants.secret,
+        secret: process.env.JWT_SECRET,
       });
       return payload;
     } catch {
@@ -37,13 +35,11 @@ export class AuthGuard implements CanActivate {
     }
   }
 
-  private async findUserFromPayload(payload: Payload): Promise<User | null> {
-    return await this.prismaService.user.findUnique({
-      where: { id: payload.id },
-    });
+  private async findUserFromPayload(payload: Payload) {
+    return await this.accountService.findById(payload.id);
   }
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  async canActivate(context: ExecutionContext) {
     const request: Request = context.switchToHttp().getRequest();
 
     const token = this.extractTokenFromHeader(request);

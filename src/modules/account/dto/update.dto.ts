@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { requiredString } from 'src/shared/validators/required-string.validator';
 
-export const editAccountSchema = z
+export const updateAccountSchema = z
   .object({
     username: requiredString()
       .regex(/^[a-z0-9-]+$/, {
@@ -32,4 +32,4 @@ export const editAccountSchema = z
     path: ['currentPassword'],
   });
 
-export type EditAccountDto = z.infer<typeof editAccountSchema>;
+export type UpdateAccountDto = z.infer<typeof updateAccountSchema>;

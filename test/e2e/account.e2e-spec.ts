@@ -1,13 +1,21 @@
-import { req } from '../helpers/req.helper';
-import { expectRes } from '../helpers/expectRes.helper';
-import { expectErrors } from '../helpers/expectErrors.helper';
+import { req } from 'test/helpers/req.helper';
+import { expectPayload } from 'test/helpers/expectPayload';
+import { expectFieldErrors } from 'test/helpers/expectFieldErrors';
+import { signupSuccessSchema } from 'src/modules/account/payloads/signup-success.schema';
+import { loginSuccessSchema } from 'src/modules/account/payloads/login-success.schema';
+import { getSchema } from 'src/modules/account/payloads/get.schema';
+import { updateSuccessSchema } from 'src/modules/account/payloads/update-success.schema';
 
 enum Routes {
   Signup = 'POST /account/signup',
   Login = 'POST /account/login',
   GetAccount = 'GET /account',
-  EditAccount = 'POST /account',
+  UpdateAccount = 'PATCH /account',
 }
+
+afterAll(async () => {
+  await prisma.clear();
+});
 
 describe(Routes.Signup, () => {
   const correctForm = {
@@ -16,10 +24,15 @@ describe(Routes.Signup, () => {
     confirmPassword: 'correct horse battery staple',
   };
 
+  beforeAll(async () => {
+    await prisma.clear();
+  });
+
   it('400 if input errors', async () => {
-    await expectErrors({
-      app,
-      endpoint: Routes.Signup,
+    await expectFieldErrors({
+      callback: async (form) => {
+        return await req(app, Routes.Signup, { form });
+      },
       correctForm,
       wrongFields: [
         { username: '' },
@@ -41,16 +54,20 @@ describe(Routes.Signup, () => {
     const res = await req(app, Routes.Signup, {
       form: { ...correctForm, username: existingUser.username },
     });
-    expectRes(res, 400, 'Usernames must be unique. Please choose another.');
+    expectPayload(res, {
+      status: 400,
+      message: 'Usernames must be unique. Please choose another.',
+    });
   });
 
   it('201 with data', async () => {
     const res = await req(app, Routes.Signup, { form: correctForm });
-    expectRes(res, 201, 'Account successfully created.');
-    expect(res.body.data).toEqual({
-      id: 2,
-      username: correctForm.username,
+    const payload = expectPayload(res, {
+      status: 201,
+      message: 'Account successfully created.',
+      schema: signupSuccessSchema,
     });
+    expect(payload.data.newUser.username).toBe(correctForm.username);
   });
 });
 
@@ -62,62 +79,80 @@ describe(Routes.Login, () => {
 
   beforeAll(async () => {
     await prisma.clear();
-    await prisma.createUser({ ...correctForm });
+    await prisma.user.create({ data: correctForm });
   });
 
   it('400 if input errors', async () => {
-    await expectErrors({
-      app,
-      endpoint: Routes.Login,
+    await expectFieldErrors({
+      callback: async (form) => {
+        return await req(app, Routes.Login, { form });
+      },
       correctForm,
       wrongFields: [{ username: '' }, { password: '' }],
     });
   });
 
-  it('400 if incorrect username or password', async () => {
-    const message = 'Incorrect username or password.';
-    const resIncorrectUsername = await req(app, Routes.Login, {
-      form: { ...correctForm, username: 'nonexistent-user' },
+  it('400 if unknown username', async () => {
+    const res = await req(app, Routes.Login, {
+      form: { ...correctForm, username: 'alice' },
     });
-    expectRes(resIncorrectUsername, 400, message);
-    const resIncorrectPassword = await req(app, Routes.Login, {
-      form: { ...correctForm, password: 'incorrect horse battery staple' },
+    expectPayload(res, {
+      status: 400,
+      message: 'Incorrect username or password.',
     });
-    expectRes(resIncorrectPassword, 400, message);
   });
 
-  it('201 with token', async () => {
+  it('400 if wrong password', async () => {
+    const res = await req(app, Routes.Login, {
+      form: { ...correctForm, password: 'incorrect horse battery staple' },
+    });
+    expectPayload(res, {
+      status: 400,
+      message: 'Incorrect username or password.',
+    });
+  });
+
+  it('201 with data', async () => {
     const res = await req(app, Routes.Login, { form: correctForm });
-    expectRes(res, 201, 'Successfully logged in.');
-    expect(res.body.data.token).toBeDefined();
+    expectPayload(res, {
+      status: 201,
+      message: 'Successfully logged in.',
+      schema: loginSuccessSchema,
+    });
   });
 });
 
 describe(Routes.GetAccount, () => {
   const loginForm = {
-    username: 'user',
-    password: 'password',
+    username: 'bob',
+    password: 'correct horse battery staple',
   };
+  let token: string;
 
   beforeAll(async () => {
     await prisma.clear();
-    await prisma.createUser({ ...loginForm });
+    const user = await prisma.user.create({ data: loginForm });
+    token = await jwt.signAsync({ id: user.id, username: user.username });
   });
 
   it('401 if no token', async () => {
     const res = await req(app, Routes.GetAccount);
-    expectRes(res, 401, 'Please log in.');
+    expectPayload(res, {
+      status: 401,
+      message: 'Please log in.',
+    });
   });
 
-  it('200 with data', async () => {
-    let res = await req(app, Routes.Login, { form: loginForm });
-    const token = res.body.data.token;
-    res = await req(app, Routes.GetAccount, { token });
-    expectRes(res, 200);
+  it('200 if given token', async () => {
+    const res = await req(app, Routes.GetAccount, { token });
+    expectPayload(res, {
+      status: 200,
+      schema: getSchema,
+    });
   });
 });
 
-describe(Routes.EditAccount, () => {
+describe(Routes.UpdateAccount, () => {
   const correctForm = {
     username: 'alice',
     password: 'staple battery horse correct',
@@ -128,18 +163,20 @@ describe(Routes.EditAccount, () => {
 
   beforeAll(async () => {
     await prisma.clear();
-    const bob = await prisma.createUser({
-      username: 'bob',
-      password: correctForm.currentPassword,
+    const user = await prisma.user.create({
+      data: {
+        username: 'bob',
+        password: correctForm.currentPassword,
+      },
     });
-    token = await jwt.signAsync({ id: bob.id, username: bob.username });
+    token = await jwt.signAsync({ id: user.id, username: user.username });
   });
 
   it('400 if input errors', async () => {
-    await expectErrors({
-      app,
-      endpoint: Routes.EditAccount,
-      token,
+    await expectFieldErrors({
+      callback: async (form) => {
+        return await req(app, Routes.UpdateAccount, { token, form });
+      },
       correctForm,
       wrongFields: [
         { username: '' },
@@ -154,41 +191,50 @@ describe(Routes.EditAccount, () => {
   });
 
   it('400 if username is not unique', async () => {
-    const otherUser = await prisma.createUser({
-      username: 'eve',
-      password: 'password',
+    const otherUser = await prisma.user.create({
+      data: {
+        username: 'eve',
+        password: 'password',
+      },
     });
     const incorrectForm = { ...correctForm, username: otherUser.username };
-    const res = await req(app, Routes.EditAccount, {
+    const res = await req(app, Routes.UpdateAccount, {
       token,
       form: { ...incorrectForm },
     });
-    expectRes(res, 400, 'Usernames must be unique. Please choose another.');
+    expectPayload(res, {
+      status: 400,
+      message: 'Usernames must be unique. Please choose another.',
+    });
     await prisma.user.delete({ where: { id: otherUser.id } });
   });
 
   it('400 if incorrect password', async () => {
-    const res = await req(app, Routes.EditAccount, {
+    const res = await req(app, Routes.UpdateAccount, {
       token,
       form: {
         ...correctForm,
         currentPassword: 'incorrect horse battery staple',
       },
     });
-    expectRes(res, 400, 'Incorrect password.');
+    expectPayload(res, {
+      status: 400,
+      message: 'Incorrect password.',
+    });
   });
 
-  it('201 with data', async () => {
-    let res = await req(app, Routes.EditAccount, {
+  it('200 with data', async () => {
+    let res = await req(app, Routes.UpdateAccount, {
       token,
       form: correctForm,
     });
-    expectRes(res, 201, 'Successfully changed account details.');
-    expect(res.body.data.username).toEqual(correctForm.username);
-    expect(res.body.data).toEqual({
-      username: correctForm.username,
-      updatedPassword: true,
+    const payload = expectPayload(res, {
+      status: 200,
+      message: 'Account successfully updated.',
+      schema: updateSuccessSchema,
     });
+    expect(payload.data.updatedUser.username).toEqual(correctForm.username);
+    expect(payload.data.updatedPassword).toBe(true);
 
     // can log in with new password afterward
     res = await req(app, Routes.Login, {
@@ -197,18 +243,9 @@ describe(Routes.EditAccount, () => {
         password: correctForm.password,
       },
     });
-    expectRes(res, 201, 'Successfully logged in.');
-  });
-
-  it('201 even without password', async () => {
-    const res = await req(app, Routes.EditAccount, {
-      token,
-      form: { username: 'eve' },
-    });
-    expectRes(res, 201, 'Successfully changed account details.');
-    expect(res.body.data).toEqual({
-      username: 'eve',
-      updatedPassword: false,
+    expectPayload(res, {
+      status: 200,
+      message: 'Successfully logged in.',
     });
   });
 });

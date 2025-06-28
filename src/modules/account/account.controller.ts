@@ -1,23 +1,21 @@
 import {
-  Body,
   Controller,
   Post,
   Get,
-  UseGuards,
+  Patch,
   UsePipes,
+  UseGuards,
   Request,
+  Body,
 } from '@nestjs/common';
-import { ZodValidationPipe } from 'src/shared/pipes/zod-validation.pipe';
-import {
-  CreateAccountDto,
-  createAccountSchema,
-} from './dto/create-account.dto';
 import { AccountService } from './account.service';
+import { ZodValidationPipe } from 'src/shared/pipes/zod-validation.pipe';
+import { CreateAccountDto, createAccountSchema } from './dto/signup.dto';
 import { UsernameUniquePipe } from 'src/shared/pipes/username-unique.pipe';
-import { AuthAccountDto, authAccountSchema } from './dto/auth-account.dto';
+import { AuthAccountDto, authAccountSchema } from './dto/login.dto';
 import { AuthGuard } from 'src/shared/guards/auth.guard';
-import { EditAccountDto, editAccountSchema } from './dto/update-account.dto';
 import { User } from '@prisma/client';
+import { UpdateAccountDto, updateAccountSchema } from './dto/update.dto';
 
 @Controller('account')
 export class AccountController {
@@ -26,52 +24,44 @@ export class AccountController {
   @Post('/signup')
   @UsePipes(new ZodValidationPipe(createAccountSchema), UsernameUniquePipe)
   async signup(@Body() { data }: { data: CreateAccountDto }) {
-    const user = await this.accountService.createUser({
-      username: data.username,
-      password: data.password,
-    });
     return {
       message: 'Account successfully created.',
-      data: { id: user.id, username: user.username },
+      data: await this.accountService.createFromData(data),
     };
   }
 
   @Post('/login')
   @UsePipes(new ZodValidationPipe(authAccountSchema))
   async login(@Body() { data }: { data: AuthAccountDto }) {
-    const token = await this.accountService.authUser(
-      data.username,
-      data.password,
-    );
     return {
-      message: `Successfully logged in.`,
-      data: { token },
+      message: 'Successfully logged in.',
+      data: await this.accountService.authFromData(data),
     };
   }
 
-  @UseGuards(AuthGuard)
   @Get()
-  land(@Request() req: { user: { id: number; username: string } }) {
-    return { data: { ...req.user } };
+  @UseGuards(AuthGuard)
+  get(@Request() { user }: { user: User }) {
+    return {
+      data: {
+        user: {
+          id: user.id,
+          username: user.username,
+        },
+      },
+    };
   }
 
+  @Patch()
   @UseGuards(AuthGuard)
-  @Post()
-  @UsePipes(new ZodValidationPipe(editAccountSchema), UsernameUniquePipe)
+  @UsePipes(new ZodValidationPipe(updateAccountSchema), UsernameUniquePipe)
   async update(
     @Request() { user }: { user: User },
-    @Body() { data }: { data: EditAccountDto },
+    @Body() { data }: { data: UpdateAccountDto },
   ) {
-    const { updatedUser, updatedPassword } = await this.accountService.editUser(
-      user,
-      data,
-    );
     return {
-      message: 'Successfully changed account details.',
-      data: {
-        username: updatedUser.username,
-        updatedPassword,
-      },
+      message: 'Account successfully updated.',
+      data: await this.accountService.updateUserFromData(user, data),
     };
   }
 }
