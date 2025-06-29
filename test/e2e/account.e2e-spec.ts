@@ -4,7 +4,7 @@ import { expectFieldErrors } from 'test/helpers/expectFieldErrors';
 
 import { signupSuccessSchema } from 'src/modules/account/payloads/signup-success.schema';
 import { loginSuccessSchema } from 'src/modules/account/payloads/login-success.schema';
-import { getSchema } from 'src/modules/account/payloads/get.schema';
+import { getSchema } from 'src/modules/account/payloads/get-account.schema';
 import { updateSuccessSchema } from 'src/modules/account/payloads/update-success.schema';
 
 enum Routes {
