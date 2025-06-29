@@ -1,6 +1,7 @@
 import { req } from 'test/helpers/req.helper';
 import { expectPayload } from 'test/helpers/expectPayload';
 import { expectFieldErrors } from 'test/helpers/expectFieldErrors';
+
 import { signupSuccessSchema } from 'src/modules/account/payloads/signup-success.schema';
 import { loginSuccessSchema } from 'src/modules/account/payloads/login-success.schema';
 import { getSchema } from 'src/modules/account/payloads/get.schema';
@@ -48,8 +49,9 @@ describe(Routes.Signup, () => {
   });
 
   it('400 if username is not unique', async () => {
-    const existingUser = await prisma.user.create({
-      data: { username: 'alice', password: 'correct horse battery staple' },
+    const existingUser = await prisma.createUser({
+      username: 'alice',
+      password: 'correct horse battery staple',
     });
     const res = await req(app, Routes.Signup, {
       form: { ...correctForm, username: existingUser.username },
@@ -79,7 +81,7 @@ describe(Routes.Login, () => {
 
   beforeAll(async () => {
     await prisma.clear();
-    await prisma.user.create({ data: correctForm });
+    await prisma.createUser(correctForm);
   });
 
   it('400 if input errors', async () => {
@@ -131,7 +133,7 @@ describe(Routes.GetAccount, () => {
 
   beforeAll(async () => {
     await prisma.clear();
-    const user = await prisma.user.create({ data: loginForm });
+    const user = await prisma.createUser(loginForm);
     token = await jwt.signAsync({ id: user.id, username: user.username });
   });
 
@@ -163,11 +165,9 @@ describe(Routes.UpdateAccount, () => {
 
   beforeAll(async () => {
     await prisma.clear();
-    const user = await prisma.user.create({
-      data: {
-        username: 'bob',
-        password: correctForm.currentPassword,
-      },
+    const user = await prisma.createUser({
+      username: 'bob',
+      password: correctForm.currentPassword,
     });
     token = await jwt.signAsync({ id: user.id, username: user.username });
   });
@@ -191,11 +191,9 @@ describe(Routes.UpdateAccount, () => {
   });
 
   it('400 if username is not unique', async () => {
-    const otherUser = await prisma.user.create({
-      data: {
-        username: 'eve',
-        password: 'password',
-      },
+    const otherUser = await prisma.createUser({
+      username: 'eve',
+      password: 'password',
     });
     const incorrectForm = { ...correctForm, username: otherUser.username };
     const res = await req(app, Routes.UpdateAccount, {
@@ -244,7 +242,34 @@ describe(Routes.UpdateAccount, () => {
       },
     });
     expectPayload(res, {
+      status: 201,
+      message: 'Successfully logged in.',
+    });
+  });
+
+  it('200 even without password', async () => {
+    const username = 'eve';
+    let res = await req(app, Routes.UpdateAccount, {
+      token,
+      form: { username },
+    });
+    const payload = expectPayload(res, {
       status: 200,
+      message: 'Account successfully updated.',
+      schema: updateSuccessSchema,
+    });
+    expect(payload.data.updatedUser.username).toEqual(username);
+    expect(payload.data.updatedPassword).toBe(false);
+
+    // can log in with same password
+    res = await req(app, Routes.Login, {
+      form: {
+        username,
+        password: correctForm.password,
+      },
+    });
+    expectPayload(res, {
+      status: 201,
       message: 'Successfully logged in.',
     });
   });

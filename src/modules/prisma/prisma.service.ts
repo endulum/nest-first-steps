@@ -1,29 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma, User } from '@prisma/client';
 import { hashPassword } from 'src/shared/helpers/password.helpers';
-
-const HashPasswordsExtension = Prisma.defineExtension({
-  name: 'hash passwords',
-  model: {
-    user: {
-      async $allOperations({
-        operation,
-        args,
-        query,
-      }: {
-        operation: string;
-        args: Prisma.UserCreateArgs | Prisma.UserUpdateArgs;
-        query: (...args: any[]) => void;
-      }) {
-        console.log(operation);
-        if (['create', 'update'].includes(operation) && args.data.password) {
-          args.data.password = await hashPassword(args.data.password as string);
-        }
-        return query(args);
-      },
-    },
-  },
-});
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
@@ -38,5 +15,28 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       "DELETE FROM sqlite_sequence WHERE name = 'User'",
     ])
       await this.$queryRaw`${Prisma.raw(query)}`;
+  }
+
+  async createUser(data: Prisma.UserCreateInput) {
+    const newUser = await this.user.create({
+      data: {
+        ...data,
+        password: await hashPassword(data.password),
+      },
+    });
+    return newUser;
+  }
+
+  async updateUser(user: User, data: Prisma.UserUpdateInput) {
+    const updatedUser = await this.user.update({
+      where: { id: user.id },
+      data: {
+        ...data,
+        ...(data.password && {
+          password: await hashPassword(data.password as string),
+        }),
+      },
+    });
+    return updatedUser;
   }
 }

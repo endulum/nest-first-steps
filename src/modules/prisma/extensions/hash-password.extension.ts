@@ -23,3 +23,15 @@ export const hashPasswordsExtension = Prisma.defineExtension({
     },
   },
 });
+
+/*
+
+NOT IMPLEMENTED.
+
+i could not figure out how to wire up this extension to the prisma service;
+the extension would just not run.
+
+implementing this will help reduce the redundancy that createUser and updateUser
+has, and allow me to use [prismaClient].user.create() directly. maybe some other day.
+
+*/

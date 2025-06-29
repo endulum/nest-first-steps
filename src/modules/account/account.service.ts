@@ -23,12 +23,11 @@ export class AccountService {
   }
 
   async createFromData(data: CreateAccountDto) {
-    const newUser = await this.prisma.user.create({
-      data: {
-        username: data.username,
-        password: data.password,
-      },
+    const newUser = await this.prisma.createUser({
+      username: data.username,
+      password: data.password,
     });
+
     return {
       newUser: { id: newUser.id, username: newUser.username },
     };
@@ -70,12 +69,9 @@ export class AccountService {
       }
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        username: data.username,
-        ...(data.password && { password: data.password }),
-      },
+    const updatedUser = await prisma.updateUser(user, {
+      username: data.username,
+      ...(data.password && { password: data.password }),
     });
 
     return {
