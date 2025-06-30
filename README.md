@@ -2,6 +2,28 @@
 
 This the server application for [Project Name], exposing an API for managing [Project Name]'s users and data.
 
+## Getting started
+
+### Environment
+
+This project uses three env files `test`, `development`, and `production`, and supplies a file [`.env.example`](./.env.example) with the variables necessary for the project to run. Copy this file to the three envs described using the script `npm run envinit`.
+
+### Setup
+
+```sh
+# install dependencies
+npm install
+
+# create, migrate, and seed database
+npm run db:dev:init
+
+# clear and re-seed database
+npm run db:dev:reseed
+
+# start server in watch mode
+npm run start:dev
+```
+
 ## Endpoint reference
 
 Response payloads are exclusively in JSON.

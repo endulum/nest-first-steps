@@ -6,6 +6,7 @@ export class UsernameUniquePipe implements PipeTransform {
   constructor(private accountService: AccountService) {}
 
   async transform(value: { data: { username: string } }) {
+    // todo: exempt current user
     const existingUser = await this.accountService.findByUsername(
       value.data.username,
     );

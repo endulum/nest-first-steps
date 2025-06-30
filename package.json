@@ -6,14 +6,21 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "envinit": "cp .env.example .env.production && cp .env.example .env.development && cp .env.example .env.test",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "fmt": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "db:migrate:test": "rm ./prisma/test.db && dotenv -e .env.test -- npx prisma migrate reset --force --skip-seed",
+    "db:test:migrate": "rm ./prisma/test.db && dotenv -e .env.test -- npx prisma migrate reset --force --skip-seed",
+    "db:dev:init": "dotenv -e .env.development -- npx prisma migrate dev --name init",
+    "db:dev:reseed": "dotenv -e .env.development -- npx prisma migrate reset",
     "test:e2e": "dotenv -e .env.test -- jest --watch --config ./test/jest-e2e.json",
-    "test": "npm run db:migrate:test && clear && npm run test:e2e"
+    "test": "npm run db:test:migrate && clear && npm run test:e2e",
+    "build": "nest build",
+    "start:dev": "dotenv -e .env.development -- nest start --watch",
+    "start:prod": "dotenv -e .env.production -- node dist/main"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/mapped-types": "*",

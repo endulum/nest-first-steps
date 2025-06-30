@@ -69,7 +69,7 @@ export class AccountService {
       }
     }
 
-    const updatedUser = await prisma.updateUser(user, {
+    const updatedUser = await this.prisma.updateUser(user, {
       username: data.username,
       ...(data.password && { password: data.password }),
     });
