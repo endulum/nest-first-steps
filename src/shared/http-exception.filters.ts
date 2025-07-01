@@ -44,3 +44,5 @@ export class UnauthorizedExceptionFilter implements ExceptionFilter {
     });
   }
 }
+
+// todo: improper json, server error, etc triggers a default error
